@@ -98,7 +98,7 @@ class Blockchain(object):
         guess = f"{block_string}{proof}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         # return True or False
-        return guess_hash[:3] == "000"
+        return guess_hash[:6] == "000000"
 
 
 # Instantiate our Node
@@ -111,20 +111,30 @@ node_identifier = str(uuid4()).replace('-', '')
 blockchain = Blockchain()
 
 
-@app.route('/mine', methods=['GET'])
+@app.route('/mine', methods=['POST'])
 def mine():
-    # Run the proof of work algorithm to get the next proof
-    proof = blockchain.proof_of_work(blockchain.last_block)
-    # Forge the new Block by adding it to the chain with the proof
-    previous_hash = blockchain.hash(blockchain.last_block)
-    block = blockchain.new_block(proof, previous_hash)
-    response = {
-        # TODO: Send a JSON response with the new block
-        "block": block
-    }
-
-    return jsonify(response), 200
-
+    data = request.get_json()
+    if data['proof'] and data['id']:
+        proof = data['proof']
+        previous_hash = blockchain.hash(blockchain.last_block)
+        block = blockchain.new_block(proof, previous_hash)
+        validProof = blockchain.valid_proof(previous_hash, proof)
+        if validProof:
+            response = {
+                "message": "New block forged",
+                "block": block
+            }
+            return jsonify(response), 200
+        else:
+            response = {
+                "message": "Invalid proof provided"
+            }
+            return jsonify(response), 400
+    else:
+        response = {
+            "message": "Proof or ID missisng"
+        }
+        return jsonify(response), 400
 
 @app.route('/chain', methods=['GET'])
 def full_chain():
