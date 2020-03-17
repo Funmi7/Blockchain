@@ -1,9 +1,7 @@
-import hashlib
 import requests
-
+import hashlib
 import sys
 import json
-
 
 def proof_of_work(block):
     """
@@ -13,7 +11,15 @@ def proof_of_work(block):
     in an effort to find a number that is a valid proof
     :return: A valid proof for the provided block
     """
-    pass
+    block_string = json.dumps(block, sort_keys=True)
+    proof = 0
+    # TODO
+    print("Proof search started")
+    while valid_proof(block_string, proof) is False:
+        proof += 1
+    # return proof
+    print("Valid proof found")
+    return proof
 
 
 def valid_proof(block_string, proof):
@@ -27,8 +33,9 @@ def valid_proof(block_string, proof):
     correct number of leading zeroes.
     :return: True if the resulting hash is a valid proof, False otherwise
     """
-    pass
-
+    guess = f"{block_string}{proof}".encode()
+    guess_hash = hashlib.sha256(guess).hexdigest()
+    return guess_hash[:6] == "000000"
 
 if __name__ == '__main__':
     # What is the server address? IE `python3 miner.py https://server.com/api/`
@@ -37,6 +44,7 @@ if __name__ == '__main__':
     else:
         node = "http://localhost:5000"
 
+    coins = 0
     # Load ID
     f = open("my_id.txt", "r")
     id = f.read()
@@ -57,7 +65,7 @@ if __name__ == '__main__':
 
         # TODO: Get the block from `data` and use it to look for a new proof
         # new_proof = ???
-
+        new_proof = proof_of_work(data)
         # When found, POST it to the server {"proof": new_proof, "id": id}
         post_data = {"proof": new_proof, "id": id}
 
@@ -67,4 +75,10 @@ if __name__ == '__main__':
         # TODO: If the server responds with a 'message' 'New Block Forged'
         # add 1 to the number of coins mined and print it.  Otherwise,
         # print the message from the server.
-        pass
+        new_block_forged = data["message"] = "New block forged"
+        if new_block_forged:
+            coins += 1
+            print("Proof validation successful")
+            print(f"The amount of coins earned so far is {coins}")
+        else:
+            print(data['message'], new_proof)
